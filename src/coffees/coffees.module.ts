@@ -1,9 +1,9 @@
 import { Injectable, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Event, EventSchema } from 'src/events/entities/event.entity';
-import { COFFEE_BRANDS } from './coffees.constants';
 import { CoffeesController } from './coffees.controller';
 import { CoffeesService } from './coffees.service';
+import { ConfigModule } from '@nestjs/config';
 import { Coffee, CoffeeSchema } from './entities/coffee.entity';
 
 @Module({
@@ -18,19 +18,10 @@ import { Coffee, CoffeeSchema } from './entities/coffee.entity';
         schema: EventSchema,
       },
     ]),
+    ConfigModule,
   ],
   controllers: [CoffeesController],
-  providers: [
-    CoffeesService,
-    {
-      provide: COFFEE_BRANDS,
-      useFactory: async (): Promise<string[]> => {
-        const coffeeBrands = await Promise.resolve(['buddy brew', 'nescafe']);
-        console.log('[!] Async Factory [!]');
-        return coffeeBrands;
-      },
-    },
-  ],
+  providers: [CoffeesService],
   exports: [CoffeesService],
 })
 export class CoffeesModule {}
