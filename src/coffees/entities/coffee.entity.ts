@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { Flavor } from './flavor.entity';
 
 @Schema()
 export class Coffee extends Document {
@@ -10,7 +11,7 @@ export class Coffee extends Document {
   @Prop({ default: 0 })
   recommendations: number;
   @Prop([String])
-  flavors: string[];
+  flavors: Flavor[];
 }
 
 export const CoffeeSchema = SchemaFactory.createForClass(Coffee);

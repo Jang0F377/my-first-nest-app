@@ -63,7 +63,8 @@ export class CoffeesService {
     return coffee.remove();
   }
 
-  async recommendCoffee(coffee: Coffee) {
+  async recommendCoffee(id: string) {
+    const coffee = await this.findOne(id);
     const session = await this.connection.startSession();
     session.startTransaction();
 
@@ -81,6 +82,7 @@ export class CoffeesService {
     } catch (err) {
       await session.abortTransaction();
     } finally {
+      console.log(coffee);
       session.endSession();
     }
   }

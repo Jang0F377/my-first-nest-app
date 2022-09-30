@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
@@ -17,7 +18,15 @@ async function bootstrap() {
       },
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
+  const options = new DocumentBuilder()
+    .setTitle('my-nest-app')
+    .setDescription('First NestJs App')
+    .setVersion('1.0')
+    .build();
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api', app, document);
+
+  // app.useGlobalFilters(new HttpExceptionFilter());
   // app.useGlobalInterceptors(
   //   new WrapResponseInterceptor(),
   //   // new TimeoutInterceptor(),
