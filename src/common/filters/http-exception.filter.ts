@@ -4,7 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 @Catch(HttpException)
 export class HttpExceptionFilter<T extends HttpException>
@@ -13,6 +13,7 @@ export class HttpExceptionFilter<T extends HttpException>
   catch(exception: T, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const req = ctx.getRequest<Request>();
 
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
@@ -24,6 +25,9 @@ export class HttpExceptionFilter<T extends HttpException>
     response.status(status).json({
       ...error,
       timestamp: new Date().toISOString(),
+      warning: status === 403 ? 'This will be reported' : null,
+      host: req.headers.host,
+      userAgent: req.headers['user-agent'],
     });
   }
 }
