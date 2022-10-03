@@ -1,15 +1,102 @@
-version: '3'
-
+version: '3.4'
 services:
-  mongodb:
-    image: mongo
-    restart: always
+  vf-server:
+    container_name: vf-server
+    image: vf-server:latest
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    build:
+      context: .
+      target: production
+      dockerfile: ./Dockerfile
+    command: node dist/main
     ports:
-      - 27017:27017
-    environment:
-      MONGODB_DATABASE: '${MONGO_HOST}'
-    volumes:
-      - my-nest-app:/var/lib/docker/volumes/my-nest-app/
+      - 3000:3000
+      - 9229:9229
+    networks:
+      - server-network
+    restart: unless-stopped
 
+  mongo-express:
+    image: mongo-express
+    container_name: server-mongo-express
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_SERVER: "${MONGO_HOST}"
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_USERNAME}"
+      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_PASSWORD}"
+      ME_CONFIG_BASICAUTH_USERNAME: "${MONGO_EXPRESS_USERNAME}"
+      ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD}"
+    networks:
+      - server-network
+    ports:
+      - 8081:8081
+    healthcheck:
+      test: wget --quiet --tries=3 --spider http://${MONGO_EXPRESS_USERNAME}:${MONGO_EXPRESS_PASSWORD}@localhost:8081 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:5.0.0
+    container_name: server-mongodb
+    environment:
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongodb-data1:/data/db
+      - ./scripts/mongodb.key:/data/file.key     
+      - ./scripts/mongo_setup.sh:/scripts/mongo_setup.sh
+    networks:
+      - server-network
+    ports:
+      - 30001:27017
+    restart: unless-stopped
+    depends_on:
+      - mongodb2
+      - mongodb3
+    healthcheck:
+        test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u ${MONGO_USERNAME} -p ${MONGO_PASSWORD} --quiet
+        interval: 30s
+        timeout: 10s
+        retries: 6
+    entrypoint: [ "/scripts/mongo_setup.sh" ]
+
+  mongodb2:
+    image: mongo:5.0.0
+    container_name: server-mongodb2
+    volumes:
+      - mongodb-data2:/data/db
+      - ./scripts/mongodb.key:/data/file.key
+      - ./scripts/mongo_secondary_setup.sh:/scripts/mongo_setup.sh
+    networks:
+      - server-network
+    ports:
+      - 30002:27017
+    restart: unless-stopped
+    entrypoint: [ "/scripts/mongo_setup.sh" ]
+
+  mongodb3:
+    image: mongo:5.0.0
+    container_name: server-mongodb3
+    volumes:
+      - mongodb-data3:/data/db
+      - ./scripts/mongodb.key:/data/file.key
+      - ./scripts/mongo_secondary_setup.sh:/scripts/mongo_setup.sh
+    networks:
+      - server-network
+    ports:
+      - 30003:27017
+    restart: unless-stopped
+    entrypoint: [ "/scripts/mongo_setup.sh" ]
 volumes:
-  my-nest-app:
+  mongodb-data1:
+  mongodb-data2:
+  mongodb-data3:
+networks:
+  server-network:
